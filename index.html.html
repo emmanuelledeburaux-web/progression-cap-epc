@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progression CAP EPC</title>
+<!--EXPORT-SLOT-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout : barre d'outils + vue Classe (carte de chaleur élèves × 24 compétences) / vue Élève (profil joueur + grille datée) */
+:root{
+  --bg:#f3f4f8; --surface:#ffffff; --surface-2:#eceef5; --line:#d8dbe6;
+  --ink:#1b1f33; --ink-2:#4a5070; --ink-3:#7c829e;
+  --navy:#1e2440; --accent:#2f5bd3;
+  --up1:#2f5bd3; --up2:#a2581d; --up3:#7a3fd1;
+  --lD:#c27a2b; --lO:#d65a24; --lM:#6a3ed4; --lE:#3f9447;
+  --lD-soft:#f6e7d4; --lO-soft:#f9dfd2; --lM-soft:#e6ddfa; --lE-soft:#dcefdc; --l0-soft:#eef0f5;
+  --gold:#c89a12; --danger:#c0362c;
+  --f-display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12141f; --surface:#1b1e2d; --surface-2:#242839; --line:#33384f;
+    --ink:#eceefa; --ink-2:#b4b9d3; --ink-3:#848aa8; --navy:#0b0d16; --accent:#7d9cff;
+    --up1:#7d9cff; --up2:#e0975a; --up3:#b48cff;
+    --lD:#e09a4c; --lO:#f07a48; --lM:#9a78ff; --lE:#5dbb66;
+    --lD-soft:#3a2b1a; --lO-soft:#3d2219; --lM-soft:#2c2350; --lE-soft:#1d3521; --l0-soft:#262a3b;
+    --gold:#e8bd3a; --danger:#ff6d60; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12141f; --surface:#1b1e2d; --surface-2:#242839; --line:#33384f;
+  --ink:#eceefa; --ink-2:#b4b9d3; --ink-3:#848aa8; --navy:#0b0d16; --accent:#7d9cff;
+  --up1:#7d9cff; --up2:#e0975a; --up3:#b48cff;
+  --lD:#e09a4c; --lO:#f07a48; --lM:#9a78ff; --lE:#5dbb66;
+  --lD-soft:#3a2b1a; --lO-soft:#3d2219; --lM-soft:#2c2350; --lE-soft:#1d3521; --l0-soft:#262a3b;
+  --gold:#e8bd3a; --danger:#ff6d60; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px}
+
+/* Bandeau */
+.top{background:var(--navy);color:#fff}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{width:38px;height:38px;border-radius:9px;display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:6px;background:rgba(255,255,255,.08)}
+.brand-mark i{border-radius:3px}
+.brand h1{font-size:19px;font-weight:800;letter-spacing:.01em}
+.brand p{margin:0;font-size:12.5px;color:#b9bfdc}
+.top-actions{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.tbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:7px 12px;font-size:13.5px}
+.tbtn:hover{background:rgba(255,255,255,.18)}
+.tbtn.warn{background:#c89a12;border-color:#c89a12;color:#1b1f33;font-weight:700}
+
+/* Boutons génériques */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0b0d16}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#0b0d16}}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:700}
+
+/* Info classe */
+.classbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;padding-block:16px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;min-width:0}
+.classbar .field input{width:170px}
+.classbar .spacer{flex:1}
+
+.notice{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:var(--r);padding:10px 14px;font-size:14px;margin-bottom:14px}
+
+/* Carte de chaleur classe */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.heat-wrap{overflow-x:auto}
+table.heat{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+.heat th,.heat td{padding:0;border-bottom:1px solid var(--line)}
+.heat thead th{position:sticky;top:0;background:var(--surface);z-index:2}
+.heat .stu{position:sticky;left:0;background:var(--surface);z-index:1;text-align:left;padding:8px 12px;min-width:220px;border-right:1px solid var(--line)}
+.heat thead .stu{z-index:3}
+.heat .grp th{font-family:var(--f-display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:8px 4px 4px;text-align:left;border-bottom:0}
+.heat .codes th{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);padding:2px 0 6px;font-weight:500;text-align:center}
+.heat td.c{width:30px;min-width:30px;height:34px;text-align:center;padding:3px 2px}
+.heat td.c span{display:grid;place-items:center;height:26px;border-radius:5px;font:700 12px var(--f-mono)}
+.heat td.sep,.heat th.sep{width:10px;min-width:10px;border-bottom-color:transparent}
+.heat tbody tr{cursor:pointer}
+.heat tbody tr:hover td{background:var(--surface-2)}
+.heat tbody tr:hover .stu{background:var(--surface-2)}
+.heat td.sum{padding:4px 12px;min-width:150px;white-space:nowrap}
+.heat tfoot td{font-size:12px;color:var(--ink-2);border-bottom:0}
+.heat tfoot td.c span{font-size:9.5px;letter-spacing:-.03em}
+.heat tfoot td.sum{white-space:normal;max-width:220px;line-height:1.3}
+.heat tfoot .stu{font-weight:700}
+.stu-name{font-weight:700;display:block}
+.stu-meta{font-size:12px;color:var(--ink-3)}
+.minibar{display:flex;gap:2px;height:7px;border-radius:4px;overflow:hidden;width:120px;background:var(--l0-soft)}
+.minibar i{display:block;height:100%}
+
+.lv1{background:var(--lD);color:#fff}.lv2{background:var(--lO);color:#fff}.lv3{background:var(--lM);color:#fff}.lv4{background:var(--lE);color:#fff}
+.lv0{background:var(--l0-soft);color:var(--ink-3)}
+
+/* Vide */
+.empty{padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty h2{font-size:26px}
+.empty p{max-width:56ch;margin:0;color:var(--ink-2)}
+
+/* Fiche élève : profil joueur */
+.back{margin-block:16px 10px}
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:18px 22px;align-items:center;padding:20px}
+.avatar{width:76px;height:76px;border-radius:18px;display:grid;place-items:center;font:800 28px var(--f-display);color:#fff;position:relative}
+.avatar .lvl{position:absolute;bottom:-8px;right:-8px;background:var(--gold);color:#1b1f33;font:700 12px var(--f-mono);border-radius:999px;padding:2px 8px;border:2px solid var(--surface)}
+.hero h2{font-size:28px}
+.hero .rank{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-weight:700;color:var(--ink-2);margin-top:2px}
+.xp{margin-top:10px;max-width:520px}
+.xp-bar{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;position:relative}
+.xp-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--up1),var(--up3));border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.xp-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-3);margin-top:4px;gap:10px}
+.hero-actions{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.name-edit{display:block;border:1px dashed transparent;background:transparent;font:800 28px var(--f-display);padding:0 4px;margin-left:-5px;border-radius:6px;width:100%;max-width:520px}
+.name-edit:hover,.name-edit:focus{border-color:var(--line)}
+
+.row2{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:16px}
+.row2>*{min-width:0}
+.box{padding:16px 18px}
+.box h3{font-size:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* Badges : étiquettes de rayon */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badge{position:relative;border:1px solid var(--line);border-radius:8px;padding:10px 10px 10px 14px;background:var(--surface-2);min-height:72px}
+.badge::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:8px 0 0 8px;background:var(--line)}
+.badge b{display:block;font-size:13.5px;line-height:1.25}
+.badge small{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.3;margin-top:3px}
+.badge .ico{float:right;width:24px;height:24px;margin:-2px -2px 0 6px}
+.badge.on{background:var(--surface);border-color:var(--gold)}
+.badge.on::before{background:var(--gold)}
+.badge:not(.on){opacity:.62}
+.badge:not(.on) b{color:var(--ink-2)}
+.badge.new{animation:pop .7s ease}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+
+/* Graphique */
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+
+/* Évaluations */
+.evals{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 12px}
+.evals .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-right:4px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13.5px;display:inline-flex;gap:6px;align-items:center}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .d{font-family:var(--f-mono);font-size:12px;opacity:.75}
+.neweval{display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:12px 14px;margin-bottom:12px}
+
+/* Grille de compétences */
+.legend-dome{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--ink-2);margin-bottom:10px}
+.legend-dome span{display:inline-flex;align-items:center;gap:5px}
+.legend-dome b{display:grid;place-items:center;width:22px;height:22px;border-radius:5px;font:700 12px var(--f-mono)}
+.up-head{display:flex;align-items:center;gap:10px;padding:10px 16px;color:#fff;font-family:var(--f-display);font-weight:800;letter-spacing:.03em;font-size:14px;text-transform:uppercase;border-radius:var(--r) var(--r) 0 0}
+.up-head .pct{margin-left:auto;font:500 12px var(--f-mono);background:rgba(255,255,255,.18);padding:2px 8px;border-radius:999px;text-transform:none}
+.up1 .up-head{background:var(--up1)}.up2 .up-head{background:var(--up2)}.up3 .up-head{background:var(--up3)}
+:root[data-theme="dark"] .up-head{color:#0b0d16}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .up-head{color:#0b0d16}}
+.upblock{margin-bottom:16px}
+.comp{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) auto auto minmax(0,1.2fr);gap:10px 16px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-top:0;background:var(--surface)}
+.comp:last-child{border-radius:0 0 var(--r) var(--r)}
+.comp .task{font-weight:700;font-size:14px;line-height:1.35}
+.comp .traj{margin-top:5px;display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ink-3)}
+.traj i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.cps{font-size:12.5px;line-height:1.35}
+.cps .ss{font:500 11px var(--f-mono);color:var(--ink-3)}
+.cps b{display:block;color:var(--ink-2)}
+.cps em{display:block;color:var(--ink-3);font-size:12px}
+.dome{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.dome .who{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.dome .btns{display:flex;gap:4px}
+.dbtn{width:34px;height:34px;border-radius:7px;border:1.5px solid var(--line);background:var(--surface);font:700 13px var(--f-mono);color:var(--ink-3);transition:transform .12s}
+.dbtn:hover:not(:disabled){transform:translateY(-1px);border-color:var(--ink-3)}
+.dbtn.on.l1{background:var(--lD);border-color:var(--lD);color:#fff}
+.dbtn.on.l2{background:var(--lO);border-color:var(--lO);color:#fff}
+.dbtn.on.l3{background:var(--lM);border-color:var(--lM);color:#fff}
+.dbtn.on.l4{background:var(--lE);border-color:var(--lE);color:#fff}
+.dome.self .dbtn{width:28px;height:28px;font-size:11.5px;border-style:dashed}
+.dome.self .dbtn.on{border-style:solid}
+.dbtn:disabled{cursor:default}
+.gap{font-size:11.5px;font-weight:700;margin-top:2px;min-height:15px}
+.gap.ok{color:var(--lE)}.gap.over{color:var(--lO)}.gap.under{color:var(--lM)}
+.obs{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:7px 9px;font-size:13px;resize:vertical;min-height:38px}
+
+/* Mode auto-évaluation élève */
+.auto{max-width:860px;margin:0 auto;padding-block:24px}
+.auto-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px}
+.auto-head h2{font-size:30px}
+.auto-head .btn{margin-left:auto}
+.acard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px}
+.acard .t{font-weight:700;font-size:17px;line-height:1.35}
+.acard .q{color:var(--ink-2);font-size:14px;margin:4px 0 12px}
+.abtns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.abtn{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 8px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.abtn b{font:800 18px var(--f-display)}
+.abtn span{font-size:12.5px;color:var(--ink-2);line-height:1.25}
+.abtn.on.l1{border-color:var(--lD);background:var(--lD-soft)}
+.abtn.on.l2{border-color:var(--lO);background:var(--lO-soft)}
+.abtn.on.l3{border-color:var(--lM);background:var(--lM-soft)}
+.abtn.on.l4{border-color:var(--lE);background:var(--lE-soft)}
+.auto-progress{position:sticky;top:0;background:var(--bg);padding-block:8px;z-index:3;font-size:13px;color:var(--ink-2)}
+
+/* Modale */
+.modal-bg{position:fixed;inset:0;background:rgba(10,12,22,.55);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--surface);border-radius:14px;padding:22px;max-width:520px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow:auto}
+.modal h3{font-size:20px}
+.modal p{margin:0;color:var(--ink-2)}
+.modal textarea{min-height:180px}
+.modal .acts{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;z-index:60;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.toast.gold{background:var(--gold);color:#1b1f33}
+
+.readonly-note{font-size:13px;color:var(--ink-3)}
+footer.foot{padding-block:30px;color:var(--ink-3);font-size:12.5px}
+
+@media (max-width:980px){
+  .row2{grid-template-columns:1fr}
+  .comp{grid-template-columns:1fr 1fr}
+  .comp .task-cell,.comp .cps{grid-column:1/-1}
+  .comp .obs-cell{grid-column:1/-1}
+}
+@media (max-width:640px){
+  .wrap{padding-inline:16px}
+  .hero{grid-template-columns:auto 1fr}
+  .hero-actions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}
+  .abtns{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .classbar .field input{width:100%}
+  .classbar .field{flex:1 1 140px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{
+  .top,.no-print,.back,.hero-actions,.neweval,.evals .btn,footer.foot{display:none!important}
+  body{background:#fff;color:#000;font-size:11px}
+  .panel,.comp,.acard{break-inside:avoid}
+  .obs{border:0;background:none;resize:none}
+}
+</style>
+</head>
+<body>
+<header class="top no-print-keep"><div class="wrap">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"><i style="background:#c27a2b"></i><i style="background:#d65a24"></i><i style="background:#6a3ed4"></i><i style="background:#3f9447"></i></div>
+    <div><h1>Progression CAP EPC</h1><p>Équipier Polyvalent du Commerce · CPS RVRC 4.0 · Échelle DOME</p></div>
+  </div>
+  <div class="top-actions" id="topActions"></div>
+</div></header>
+<main id="app" class="wrap"></main>
+<div id="modalRoot"></div>
+<footer class="foot wrap" id="foot"></footer>
+<script>
+"use strict";
+/* ====== Données de référence (reprises à l'identique de la grille d'origine) ====== */
+const EXPORT = window.__EXPORT__ || null;
+const PRISTINE = "<!doctype html>\n" + document.documentElement.outerHTML;
+const LV = {1:{k:"D",n:"Débute"},2:{k:"O",n:"Occupe"},3:{k:"M",n:"Maîtrise"},4:{k:"E",n:"Expert"}};
+const LV_DEF = {
+  1:"Possède le cœur de métier de sa mission. A besoin d'être accompagné(e). La compétence est faiblement maîtrisée ou absente.",
+  2:"Possède les compétences nécessaires pour remplir sa mission avec efficacité dans la plupart des situations. Performances dans la moyenne.",
+  3:"A acquis la maîtrise de l'ensemble de sa mission. Sait faire face à des situations inhabituelles et améliore l'existant. Apporte son concours aux autres.",
+  4:"Est une référence dans l'équipe. Son comportement allié à ses compétences fait progresser celle-ci. A confirmé d'excellentes performances sur plusieurs exercices."
+};
+const LV_ELEVE = {1:["Je débute","J'ai encore besoin d'aide"],2:["Je me débrouille","Je réussis le plus souvent"],3:["Je maîtrise","Même quand c'est inhabituel"],4:["Je suis un exemple","Je peux aider les autres"]};
+const UPS = {1:"Réception et suivi des commandes",2:"Mise en valeur et approvisionnement",3:"Conseil et accompagnement du client dans son parcours d'achat"};
+const C = [
+ [1,"Participation à la passation des commandes fournisseurs","SS7","Jugement, prise de décision et initiative","Prend en compte la complexité – rigueur, précision et exactitude"],
+ [1,"Réception des marchandises · Comparaison BC/BL · Contrôle quantitatif et qualitatif des livraisons","SS4","Flexibilité et adaptabilité","Adapte sa productivité en fonction du contexte, gère les priorités, prend son temps si nécessaire"],
+ [1,"Relevé et transmission des anomalies rencontrées","SS7","Jugement, prise de décision et initiative","Agrège, analyse et prend du recul – sait décomposer et diagnostiquer une situation"],
+ [1,"Stockage des marchandises · Maintien de l'organisation et propreté de la réserve · Traçabilité","SS4","Flexibilité et adaptabilité","Personnalise la relation, adapte son propos aux interlocuteurs"],
+ [1,"Préparation des commandes destinées aux clients","SS4","Flexibilité et adaptabilité","S'adapte en situation par rapport aux souhaits et aux exigences du client"],
+ [1,"Gestion des colis livrés pour les clients : réception et retours","SS5","Gestion des émotions (les siennes)","Prend du recul vis-à-vis de ses émotions (stress, peur, agressivité...)"],
+ [1,"Tri et évacuation des déchets","SS2","Curiosité et ouverture d'esprit","Fait preuve d'esprit critique – évalue, questionne, applique une démarche réfléchie"],
+ [2,"Approvisionnement, mise en rayon et rangement des produits selon leur nature","SS7","Jugement, prise de décision et initiative","Prend en compte la complexité – rigueur, précision et exactitude"],
+ [2,"Anticipation des ruptures et réassortiment","SS4","Flexibilité et adaptabilité","Adapte sa productivité en fonction du contexte, gère les priorités, prend son temps si nécessaire"],
+ [2,"Détection et retrait des produits impropres à la vente","SS7","Jugement, prise de décision et initiative","Agrège, analyse et prend du recul – diagnostique les forces et les faiblesses"],
+ [2,"Mise en valeur des produits et de l'espace commercial","SS2","Curiosité et ouverture d'esprit","Éprouve une attirance pour l'apprentissage et la maîtrise des fondamentaux (produits, codes de l'entreprise...)"],
+ [2,"Participation aux opérations de conditionnement · Préparation et nettoyage des équipements","SS4","Flexibilité et adaptabilité","Personnalise la relation, adapte son propos aux interlocuteurs"],
+ [2,"Installation et mise à jour de la signalétique","SS7","Jugement, prise de décision et initiative","Prend en compte la complexité – rigueur, précision et exactitude"],
+ [2,"Participation à la lutte contre la démarque connue et inconnue","SS3","Esprit d'équipe","Collabore, co-construit dans une logique d'équipe et de performance collective"],
+ [2,"Participation aux inventaires","SS3","Esprit d'équipe","Fait confiance et demande de l'aide – prend plaisir à réussir ensemble"],
+ [3,"Préparation de l'environnement de travail","SS1","Posture et sens du service","Adopte une posture crédible – fait preuve d'une présence commerciale au plus près du client"],
+ [3,"Accueil et prise en charge du client","SS1","Posture et sens du service","Est disponible d'esprit pour le client – fait preuve d'une bienveillance inconditionnelle"],
+ [3,"Orientation du client · Information et conseil sur les produits et services","SS6","Intelligence émotionnelle","Écoute – consulte, encourage les autres à s'exprimer, cherche le consensus ou l'accord"],
+ [3,"Aide aux clients dans l'utilisation des équipements · Présentation / démonstration / dégustation","SS8","Force de proposition et négociation","Écoute et comprend pour conseiller efficacement"],
+ [3,"Proposition des services associés et complémentaires · Prise de commande du client","SS8","Force de proposition et négociation","Influence, convainc, négocie – affirme avec confiance sans imposer (assertivité)"],
+ [3,"Remise des colis et sacs · Enregistrement des achats / retours · Encaissement · Clôture caisse","SS9","Gestion des situations complexes","Gère l'exigence et l'immédiateté de la relation client omnicanale (il faut tout et tout de suite)"],
+ [3,"Finalisation de la prise en charge du client · Fidélisation","SS6","Intelligence émotionnelle","Adapte sa communication verbale et non verbale (regard, intonation, gestes, mimiques...)"],
+ [3,"Réception des réclamations clients et transmission au responsable","SS5","Gestion des émotions (les siennes)","Prend du recul vis-à-vis de ses émotions (stress, peur, agressivité...)"],
+ [3,"Accompagnement du parcours client dans un contexte omnicanal","SS9","Gestion des situations complexes","Optimise une expérience client sans couture (digitalisation, phygitalisation et omnicanalité)"]
+].map((a,i)=>({id:"c"+(i+1),n:i+1,up:a[0],t:a[1],ss:a[2],cps:a[3],dim:a[4]}));
+const PTS = [0,10,40,75,100];
+const MAXXP = C.length*100;
+const RANKS = [[0,"Recrue"],[20,"Équipier·e en rayon"],[45,"Équipier·e confirmé·e"],[70,"Pro du magasin"],[88,"Référent·e d'équipe"]];
+const CONTEXTS = ["Positionnement initial","Séance en classe","Mise en situation","PFMP 1","PFMP 2","PFMP 3","Bilan de fin d'année","Autre"];
+const KEY = "cap-epc-progression-v1";
+
+/* ====== État ====== */
+let storageOK = true;
+function load(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }catch(e){ storageOK=false; return null; } }
+function blank(){ return {version:1, classe:{nom:"",annee:"",ens:""}, eleves:[], lastBackup:null}; }
+let S = EXPORT ? {version:1, classe:EXPORT.classe||{}, eleves:[EXPORT.eleve], lastBackup:null} : (load() || blank());
+const ui = { view: EXPORT ? "eleve" : "classe", sid: EXPORT ? EXPORT.eleve.id : null, eid:null, newEval:false };
+let saveT=null;
+function save(){ if(EXPORT) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ storageOK=false; } }
+function saveSoon(){ clearTimeout(saveT); saveT=setTimeout(save,300); }
+
+/* ====== Utilitaires ====== */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = ()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const today = ()=>new Date().toISOString().slice(0,10);
+const fmtD = d=>{ if(!d) return ""; const [y,m,j]=d.split("-"); return `${j}/${m}/${y}`; };
+const fmtShort = d=>{ if(!d) return ""; const [y,m,j]=d.split("-"); return `${j}/${m}`; };
+const slug = s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-zA-Z0-9]+/g,"_").replace(/^_|_$/g,"");
+const stu = id=>S.eleves.find(e=>e.id===id);
+const sortedEvals = st=>[...st.evals].sort((a,b)=>(a.date||"").localeCompare(b.date||"") || (a.created||0)-(b.created||0));
+function hueOf(s){ let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))%360; return h; }
+function initials(n){ const p=String(n).trim().split(/\s+/).filter(Boolean); return ((p[0]||"?")[0]+(p[1]?p[1][0]:"")).toUpperCase(); }
+function toast(msg, gold){ const t=document.createElement("div"); t.className="toast"+(gold?" gold":""); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), gold?3200:2000); }
+function download(name, text, mime){
+  const b = new Blob([text],{type:mime}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
+}
+
+/* ====== Calculs : niveau courant, XP, rangs, badges ====== */
+// Niveau "courant" d'une compétence = dernière note prof connue (une compétence non revue garde sa note précédente)
+function stateAt(st, uptoIdx){ // uptoIdx inclus, sur évaluations triées
+  const ev = sortedEvals(st); const m={};
+  ev.slice(0, uptoIdx===undefined? ev.length : uptoIdx+1).forEach(e=>{ for(const c of C){ const v=e.notes?.[c.id]?.p; if(v) m[c.id]=v; } });
+  return m;
+}
+const xpOf = m=>C.reduce((s,c)=>s+PTS[m[c.id]||0],0);
+function rankOf(xp){ const pct=xp/MAXXP*100; let i=0; RANKS.forEach((r,k)=>{ if(pct>=r[0]) i=k; }); return {i, name:RANKS[i][1], next:RANKS[i+1]||null, pct}; }
+const lvlOf = xp=>1+Math.floor(xp/120);
+function upMean(m, up){ const cs=C.filter(c=>c.up===up && m[c.id]); return cs.length? cs.reduce((s,c)=>s+m[c.id],0)/cs.length : null; }
+
+const BADGES = [
+  {id:"first", name:"Premier pas", desc:"Recevoir sa première évaluation", ico:"step"},
+  {id:"reg", name:"Régulier·e", desc:"Être évalué·e à 3 dates différentes", ico:"cal"},
+  {id:"b1", name:"Bloc 1 maîtrisé", desc:"Toutes les compétences UP1 en M ou E", ico:"box"},
+  {id:"b2", name:"Bloc 2 maîtrisé", desc:"Toutes les compétences UP2 en M ou E", ico:"shelf"},
+  {id:"b3", name:"Bloc 3 maîtrisé", desc:"Toutes les compétences UP3 en M ou E", ico:"chat"},
+  {id:"star", name:"Première étoile", desc:"Obtenir un premier niveau Expert", ico:"star"},
+  {id:"prog", name:"En progression", desc:"Gagner un niveau sur 3 compétences d'une évaluation à l'autre", ico:"up"},
+  {id:"jump", name:"Grand bond", desc:"Gagner 2 niveaux sur une même compétence", ico:"jump"},
+  {id:"lucid", name:"Lucide", desc:"Auto-évaluation identique à celle du prof sur 75 % des compétences (8 min.)", ico:"eye"},
+  {id:"poly", name:"Polyvalent·e", desc:"Les 24 compétences évaluées, aucune en D", ico:"all"},
+  {id:"team", name:"Coéquipier·e", desc:"Esprit d'équipe (SS3) en M ou E sur les 2 tâches", ico:"team"},
+  {id:"serv", name:"Sens du service", desc:"Posture et sens du service (SS1) en M ou E sur les 2 tâches", ico:"heart"}
+];
+function badgesOf(st){
+  const ev = sortedEvals(st), m = stateAt(st), got = new Set();
+  const rated = ev.filter(e=>C.some(c=>e.notes?.[c.id]?.p));
+  if(rated.length) got.add("first");
+  if(new Set(rated.map(e=>e.date)).size>=3) got.add("reg");
+  [1,2,3].forEach(u=>{ if(C.filter(c=>c.up===u).every(c=>(m[c.id]||0)>=3)) got.add("b"+u); });
+  if(C.some(c=>m[c.id]===4)) got.add("star");
+  for(let i=1;i<ev.length;i++){
+    const a=stateAt(st,i-1), b=stateAt(st,i);
+    if(C.filter(c=>a[c.id] && b[c.id]>a[c.id]).length>=3) got.add("prog");
+  }
+  for(const c of C){ const first = ev.map(e=>e.notes?.[c.id]?.p).find(Boolean); if(first && m[c.id]-first>=2) got.add("jump"); }
+  for(const e of ev){ const both=C.filter(c=>e.notes?.[c.id]?.p && e.notes?.[c.id]?.e); if(both.length>=8 && both.filter(c=>e.notes[c.id].p===e.notes[c.id].e).length/both.length>=.75) got.add("lucid"); }
+  if(C.every(c=>m[c.id]) && C.every(c=>m[c.id]>=2)) got.add("poly");
+  if(C.filter(c=>c.ss==="SS3").every(c=>(m[c.id]||0)>=3)) got.add("team");
+  if(C.filter(c=>c.ss==="SS1").every(c=>(m[c.id]||0)>=3)) got.add("serv");
+  return got;
+}
+const ICONS = {
+ step:'<path d="M5 18h5v-4h4v-4h5" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+ cal:'<rect x="4" y="6" width="16" height="13" rx="2" fill="none" stroke-width="2"/><path d="M4 10h16M9 4v4M15 4v4" stroke-width="2" stroke-linecap="round"/>',
+ box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z M4 8l8 4 8-4 M12 12v8" fill="none" stroke-width="2" stroke-linejoin="round"/>',
+ shelf:'<path d="M4 6h16M4 12h16M4 18h16M7 6v-0M8 9V6m4 6V9m4 9v-3" fill="none" stroke-width="2" stroke-linecap="round"/>',
+ chat:'<path d="M4 6h16v9H10l-4 4v-4H4z" fill="none" stroke-width="2" stroke-linejoin="round"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="none" stroke-width="2" stroke-linejoin="round"/>',
+ up:'<path d="M4 17l6-6 4 4 6-7M14 8h6v6" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+ jump:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+ eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke-width="2"/>',
+ all:'<rect x="4" y="4" width="7" height="7" rx="1.5" fill="none" stroke-width="2"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="none" stroke-width="2"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="none" stroke-width="2"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke-width="2"/>',
+ team:'<circle cx="8" cy="9" r="3" fill="none" stroke-width="2"/><circle cx="16" cy="9" r="3" fill="none" stroke-width="2"/><path d="M3 19c1-3 3-4 5-4s4 1 5 4M11 19c1-3 3-4 5-4s4 1 5 4" fill="none" stroke-width="2" stroke-linecap="round"/>',
+ heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke-width="2" stroke-linejoin="round"/>'
+};
+const icon = (k,on)=>`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="stroke:${on?"var(--gold)":"var(--ink-3)"}">${ICONS[k]}</svg>`;
+
+/* ====== Rendu : barre du haut ====== */
+function renderTop(){
+  const el = $("#topActions");
+  if(EXPORT){ el.innerHTML = `<button class="tbtn" data-a="print">Imprimer / PDF</button>`; return; }
+  const stale = S.eleves.length && (!S.lastBackup || (Date.now()-S.lastBackup) > 7*864e5);
+  el.innerHTML = `
+    <button class="tbtn ${stale?"warn":""}" data-a="backup" title="Télécharge un fichier .json avec toute la classe">${stale?"Sauvegarder maintenant":"Sauvegarder la classe"}</button>
+    <button class="tbtn" data-a="restore">Ouvrir une sauvegarde</button>
+    <button class="tbtn" data-a="theme" aria-label="Changer de thème">Thème</button>`;
+}
+function renderFoot(){
+  const f=$("#foot");
+  if(EXPORT){ f.innerHTML = `Fiche individuelle exportée le ${fmtD(EXPORT.at)}${S.classe.ens?` par ${esc(S.classe.ens)}`:""}. Document en lecture seule.`; return; }
+  f.innerHTML = `Les données restent dans ce navigateur, sur cet ordinateur. Rien n'est envoyé en ligne. ${storageOK?"":"<b style='color:var(--danger)'>Ce navigateur bloque l'enregistrement automatique : pensez à sauvegarder la classe.</b>"}`;
+}
+
+/* ====== Vue Classe ====== */
+function renderClasse(){
+  const k = S.classe;
+  let h = `<div class="classbar">
+    <div class="field"><label for="f-cnom">Classe</label><input id="f-cnom" data-cf="nom" value="${esc(k.nom)}" placeholder="CAP1 EPC"></div>
+    <div class="field"><label for="f-cann">Année</label><input id="f-cann" data-cf="annee" value="${esc(k.annee)}" placeholder="2026-2027"></div>
+    <div class="field"><label for="f-cens">Enseignant(e)</label><input id="f-cens" data-cf="ens" value="${esc(k.ens)}" placeholder="Nom"></div>
+    <div class="spacer"></div>
+    <button class="btn primary" data-a="addStudents">+ Ajouter des élèves</button>
+    ${S.eleves.length?`<button class="btn" data-a="classEval">+ Évaluation pour toute la classe</button><button class="btn ghost" data-a="csv">Exporter CSV</button>`:""}
+  </div>`;
+  if(!S.eleves.length){
+    h += `<div class="panel empty">
+      <h2>Votre classe est vide</h2>
+      <p>Collez la liste de vos élèves (un nom par ligne). Chaque élève reçoit sa propre fiche : évaluations datées, auto-évaluation, XP, rangs et badges.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+        <button class="btn primary" data-a="addStudents">Ajouter mes élèves</button>
+        <button class="btn" data-a="demo">Voir avec des élèves fictifs</button>
+        <button class="btn ghost" data-a="restore">Ouvrir une sauvegarde</button>
+      </div></div>`;
+    return h;
+  }
+  const hasDemo = S.eleves.some(e=>e.demo);
+  if(hasDemo) h += `<div class="notice no-print"><span>Les élèves marqués <b>(exemple)</b> sont fictifs.</span><button class="btn sm" data-a="clearDemo">Retirer les élèves fictifs</button></div>`;
+  if(!S.lastBackup) h += `<div class="notice no-print"><span><b>Pensez à sauvegarder.</b> Les notes sont gardées dans ce navigateur ; si l'historique est effacé, elles disparaissent. Le bouton « Sauvegarder » crée un fichier à garder (clé USB, ENT, Drive).</span></div>`;
+
+  const ups=[1,2,3];
+  const eleves = [...S.eleves].sort((a,b)=>a.nom.localeCompare(b.nom,"fr"));
+  h += `<div class="panel heat-wrap"><table class="heat"><thead>
+    <tr class="grp"><th class="stu" rowspan="2" style="vertical-align:bottom">Élève · rang</th>${ups.map(u=>`<th class="sep"></th><th colspan="${C.filter(c=>c.up===u).length}" style="color:var(--up${u})">UP${u} · ${esc(UPS[u].split(" ").slice(0,3).join(" "))}…</th>`).join("")}<th class="sep"></th><th rowspan="2" style="vertical-align:bottom;text-align:left;padding:0 12px 6px;font-size:12px">XP · répartition</th></tr>
+    <tr class="codes">${ups.map(u=>`<th class="sep"></th>`+C.filter(c=>c.up===u).map(c=>`<th title="${esc(c.t)} — ${c.ss} ${esc(c.cps)}">${c.ss.replace("SS","")}</th>`).join("")).join("")}<th class="sep"></th></tr>
+  </thead><tbody>`;
+  const sums = {}; C.forEach(c=>sums[c.id]=[0,0]);
+  for(const st of eleves){
+    const m=stateAt(st), xp=xpOf(m), r=rankOf(xp), nEv=st.evals.length;
+    const dist=[1,2,3,4].map(l=>C.filter(c=>m[c.id]===l).length);
+    h += `<tr data-a="open" data-id="${st.id}" tabindex="0"><td class="stu"><span class="stu-name">${esc(st.nom)}${st.demo?" <small style='color:var(--ink-3)'>(exemple)</small>":""}</span><span class="stu-meta">${esc(r.name)} · ${nEv} éval.${badgesOf(st).size?` · ${badgesOf(st).size} badge${badgesOf(st).size>1?"s":""}`:""}</span></td>`;
+    for(const u of ups){ h += `<td class="sep"></td>` + C.filter(c=>c.up===u).map(c=>{ const v=m[c.id]||0; if(v){sums[c.id][0]+=v;sums[c.id][1]++;} return `<td class="c"><span class="lv${v}" title="${esc(c.t)}">${v?LV[v].k:"·"}</span></td>`; }).join(""); }
+    h += `<td class="sep"></td><td class="sum"><div class="mono" style="font-size:12.5px;margin-bottom:3px">${xp} / ${MAXXP} XP</div><div class="minibar">${dist.map((n,i)=>n?`<i class="lv${i+1}" style="width:${n/C.length*100}%"></i>`:"").join("")}</div></td></tr>`;
+  }
+  h += `</tbody><tfoot><tr><td class="stu">Moyenne de la classe</td>${ups.map(u=>`<td class="sep"></td>`+C.filter(c=>c.up===u).map(c=>{ const [s,n]=sums[c.id]; if(!n) return `<td class="c"><span class="lv0">·</span></td>`; const a=s/n; return `<td class="c"><span class="lv${Math.round(a)}" style="opacity:.75" title="${esc(c.t)} : moyenne ${a.toFixed(1)}">${a.toFixed(1).replace(".",",")}</span></td>`; }).join("")).join("")}<td class="sep"></td><td class="sum">Repérez les colonnes claires : ce sont les compétences à retravailler en groupe.</td></tr></tfoot></table></div>`;
+  return h;
+}
+
+/* ====== Vue Élève ====== */
+function chartSVG(st){
+  const ev = sortedEvals(st); if(!ev.length) return `<p class="readonly-note">La courbe apparaîtra après la première évaluation.</p>`;
+  const W=560,H=230,L=36,R=14,T=14,B=44, n=ev.length;
+  const x = i=> n===1 ? (L+(W-L-R)/2) : L + i*(W-L-R)/(n-1);
+  const y = v=> T + (4-v)*(H-T-B)/3;
+  let g = "";
+  [1,2,3,4].forEach(v=>{ g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--line)" stroke-width="1"/><text x="${L-10}" y="${y(v)+4}" text-anchor="end" style="fill:var(--ink-3);font:700 11px var(--f-mono)">${LV[v].k}</text>`; });
+  ev.forEach((e,i)=>{ const an = n===1?"middle": i===0?"start": i===n-1?"end":"middle"; g+=`<text x="${x(i)}" y="${H-24}" text-anchor="${an}" style="fill:var(--ink-2);font:500 10.5px var(--f-mono)">${fmtShort(e.date)}</text><text x="${x(i)}" y="${H-10}" text-anchor="${an}" style="fill:var(--ink-3);font:10.5px var(--f-body)">${esc((e.ctx||"").slice(0,18))}</text>`; });
+  const series = [[1,"var(--up1)"],[2,"var(--up2)"],[3,"var(--up3)"]];
+  series.forEach(([u,col])=>{
+    const pts = ev.map((e,i)=>{ const v=upMean(stateAt(st,i),u); return v==null?null:[x(i),y(v)]; });
+    const segs = pts.filter(Boolean);
+    if(segs.length>1) g+=`<polyline points="${segs.map(p=>p.join(",")).join(" ")}" fill="none" style="stroke:${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+    segs.forEach((p,k)=>{ const last=k===segs.length-1; g+=`<circle cx="${p[0]}" cy="${p[1]}" r="${last?5.5:3.5}" style="fill:${last?col:"var(--surface)"};stroke:${col}" stroke-width="2"/>`; });
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du niveau moyen par bloc">${g}</svg>
+  <div class="legend">${series.map(([u,col])=>`<span><i style="background:${col}"></i>UP${u}</span>`).join("")}<span style="color:var(--ink-3)">Niveau moyen D→E, une compétence non revue garde sa dernière note</span></div>`;
+}
+function renderEleve(){
+  const st = stu(ui.sid); if(!st){ ui.view="classe"; return renderClasse(); }
+  const ev = sortedEvals(st);
+  if(!ui.eid || !ev.find(e=>e.id===ui.eid)) ui.eid = ev.length ? ev[ev.length-1].id : null;
+  const cur = ev.find(e=>e.id===ui.eid);
+  const m = stateAt(st), xp=xpOf(m), r=rankOf(xp), got=badgesOf(st), hue=hueOf(st.nom);
+  const ro = !!EXPORT;
+  const nextTxt = r.next ? `Prochain rang : <b>${esc(r.next[1])}</b> dans ${Math.max(0,Math.ceil(r.next[0]/100*MAXXP - xp))} XP` : "Rang maximal atteint";
+  let h = ro ? "" : `<div class="back"><button class="link" data-a="home">← Retour à la classe</button></div>`;
+  h += `<div class="panel hero" ${ro?'style="margin-top:18px"':""}>
+    <div class="avatar" style="background:hsl(${hue} 55% 42%)">${esc(initials(st.nom))}<span class="lvl">Niv. ${lvlOf(xp)}</span></div>
+    <div style="min-width:0">
+      ${ro?`<h2>${esc(st.nom)}</h2>`:`<input class="name-edit" id="f-name" data-sf="nom" value="${esc(st.nom)}" aria-label="Nom de l'élève">`}
+      <div class="rank">${icon("star",true).replace('class="ico"','width="18" height="18"')} ${esc(r.name)} <span style="color:var(--ink-3);font-weight:400">· ${esc(S.classe.nom||"")} ${esc(S.classe.annee||"")}</span></div>
+      <div class="xp"><div class="xp-bar"><i style="width:${(xp/MAXXP*100).toFixed(1)}%"></i></div>
+      <div class="xp-meta"><span class="mono">${xp} / ${MAXXP} XP</span><span>${nextTxt}</span></div></div>
+    </div>
+    <div class="hero-actions">
+      ${ro?"":`<button class="btn primary" data-a="auto" ${cur?"":"disabled"}>Auto-évaluation élève</button>
+      <button class="btn" data-a="exportStu">Exporter sa fiche</button>`}
+      <button class="btn ghost" data-a="print">Imprimer / PDF</button>
+      ${ro?"":`<button class="btn ghost danger" data-a="delStu">Supprimer l'élève</button>`}
+    </div></div>`;
+  h += `<div class="row2">
+    <div class="panel box chart"><h3>Évolution par bloc</h3>${chartSVG(st)}</div>
+    <div class="panel box"><h3>Badges <span class="mono" style="font-size:12.5px;color:var(--ink-3);font-weight:500">${got.size} / ${BADGES.length}</span></h3>
+      <div class="badges">${BADGES.map(b=>`<div class="badge ${got.has(b.id)?"on":""} ${ui.fresh?.has(b.id)?"new":""}">${icon(b.ico,got.has(b.id))}<b>${esc(b.name)}</b><small>${esc(b.desc)}</small></div>`).join("")}</div>
+    </div></div>`;
+  ui.fresh = null;
+  h += `<div class="evals"><span class="lbl">Évaluations</span>${ev.map(e=>`<button class="chip ${e.id===ui.eid?"on":""}" data-a="pickEval" data-id="${e.id}"><span class="d">${fmtD(e.date)}</span>${esc(e.ctx)}</button>`).join("")||`<span class="readonly-note">Aucune évaluation pour l'instant.</span>`}
+    ${ro?"":`<button class="btn sm" data-a="toggleNew">+ Nouvelle évaluation</button>${cur?`<button class="btn sm ghost danger" data-a="delEval">Supprimer cette évaluation</button>`:""}`}</div>`;
+  if(ui.newEval && !ro) h += newEvalForm("ne");
+  if(!cur){ h += `<div class="panel empty"><h2>Première évaluation</h2><p>Créez une évaluation datée (positionnement initial, PFMP…). Chaque nouvelle évaluation ajoute un point sur la courbe.</p>${ro?"":`<button class="btn primary" data-a="toggleNew">Créer l'évaluation</button>`}</div>`; return h; }
+
+  h += `<div class="legend-dome">${[1,2,3,4].map(v=>`<span title="${esc(LV_DEF[v])}"><b class="lv${v}">${LV[v].k}</b>${LV[v].n}</span>`).join("")}<span style="color:var(--ink-3)">· Gros boutons : prof · Petits boutons pointillés : auto-évaluation de l'élève · Cliquer à nouveau efface</span></div>`;
+  const evIdx = ev.indexOf(cur);
+  for(const u of [1,2,3]){
+    const cs = C.filter(c=>c.up===u);
+    const rated = cs.filter(c=>cur.notes?.[c.id]?.p), ok = rated.filter(c=>cur.notes[c.id].p>=3).length;
+    h += `<section class="upblock up${u}"><div class="up-head">UP${u} — ${esc(UPS[u])}<span class="pct">${rated.length}/${cs.length} évaluées · ${ok} en M/E</span></div>`;
+    for(const c of cs){
+      const n = cur.notes?.[c.id]||{}, p=n.p||0, e=n.e||0;
+      const traj = ev.map((x,i)=>{ const v=x.notes?.[c.id]?.p; return `<i class="${v?"lv"+v:"lv0"}" style="${i===evIdx?"outline:2px solid var(--ink);outline-offset:1px":""}" title="${fmtD(x.date)} ${esc(x.ctx)} : ${v?LV[v].n:"non évaluée"}"></i>`; }).join("");
+      let gap="";
+      if(p&&e){ const d=e-p; gap = d===0?`<div class="gap ok">Même avis</div>`: d>0?`<div class="gap over">L'élève s'estime +${d}</div>`:`<div class="gap under">L'élève se sous-estime (${d})</div>`; }
+      else gap=`<div class="gap"></div>`;
+      h += `<div class="comp">
+        <div class="task-cell"><div class="task"><span class="mono" style="color:var(--ink-3);font-size:11.5px">${c.n}.</span> ${esc(c.t)}</div>${ev.length>1?`<div class="traj">Parcours ${traj}</div>`:""}</div>
+        <div class="cps"><span class="ss">${c.ss}</span> <b>${esc(c.cps)}</b><em>${esc(c.dim)}</em></div>
+        <div class="dome"><span class="who">Prof</span><div class="btns">${[1,2,3,4].map(v=>`<button class="dbtn l${v} ${p===v?"on":""}" data-a="rate" data-c="${c.id}" data-who="p" data-v="${v}" title="${LV[v].n}" ${ro?"disabled":""}>${LV[v].k}</button>`).join("")}</div></div>
+        <div class="dome self"><span class="who">Élève</span><div class="btns">${[1,2,3,4].map(v=>`<button class="dbtn l${v} ${e===v?"on":""}" data-a="rate" data-c="${c.id}" data-who="e" data-v="${v}" title="Auto-éval : ${LV[v].n}" ${ro?"disabled":""}>${LV[v].k}</button>`).join("")}</div>${gap}</div>
+        <div class="obs-cell">${ro? (n.o?`<div class="obs">${esc(n.o)}</div>`:"") : `<textarea class="obs" id="o-${cur.id}-${c.id}" data-obs="${c.id}" rows="1" placeholder="Observation…">${esc(n.o||"")}</textarea>`}</div>
+      </div>`;
+    }
+    h += `</section>`;
+  }
+  return h;
+}
+function newEvalForm(prefix){
+  return `<form class="panel neweval" data-form="${prefix}">
+    <div class="field"><label for="${prefix}-date">Date</label><input type="date" id="${prefix}-date" value="${today()}" required></div>
+    <div class="field"><label for="${prefix}-ctx">Situation</label><select id="${prefix}-ctx">${CONTEXTS.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div>
+    <div class="field" style="flex:1 1 180px"><label for="${prefix}-lbl">Précision (facultatif)</label><input id="${prefix}-lbl" placeholder="ex. Magasin Carrefour City"></div>
+    <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="${prefix}-copy"> Partir des notes de la dernière évaluation</label>
+    <button class="btn primary" type="submit">Créer</button>
+  </form>`;
+}
+
+/* ====== Mode auto-évaluation (l'élève ne voit pas la note du prof : évite l'effet d'ancrage) ====== */
+function renderAuto(){
+  const st=stu(ui.sid), cur=st && st.evals.find(e=>e.id===ui.eid);
+  if(!cur){ ui.view="eleve"; return renderEleve(); }
+  const done = C.filter(c=>cur.notes?.[c.id]?.e).length;
+  let h = `<div class="auto"><div class="auto-head"><div><div class="readonly-note">Auto-évaluation · ${fmtD(cur.date)} · ${esc(cur.ctx)}</div><h2>${esc(st.nom)}, à toi de te positionner</h2></div><button class="btn primary" data-a="autoDone">J'ai terminé</button></div>
+  <p style="color:var(--ink-2);margin-top:0">Pour chaque tâche, choisis ce qui te ressemble vraiment aujourd'hui. Ce n'est pas une note : on comparera ensuite ton avis avec celui de ton prof.</p>
+  <div class="auto-progress"><b>${done}</b> / ${C.length} réponses</div>`;
+  for(const u of [1,2,3]){
+    h += `<h3 style="margin:18px 0 10px;color:var(--up${u})">UP${u} — ${esc(UPS[u])}</h3>`;
+    for(const c of C.filter(c=>c.up===u)){
+      const e=cur.notes?.[c.id]?.e||0;
+      h += `<div class="acard"><div class="t">${esc(c.t)}</div><div class="q">${esc(c.cps)} : ${esc(c.dim.charAt(0).toLowerCase()+c.dim.slice(1))}</div>
+      <div class="abtns">${[1,2,3,4].map(v=>`<button class="abtn l${v} ${e===v?"on":""}" data-a="rate" data-c="${c.id}" data-who="e" data-v="${v}"><b style="color:var(--l${LV[v].k})">${LV[v].k}</b><span><b style="font:700 13px var(--f-body);color:var(--ink)">${LV_ELEVE[v][0]}</b><br>${LV_ELEVE[v][1]}</span></button>`).join("")}</div></div>`;
+    }
+  }
+  h += `<div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn primary" data-a="autoDone">J'ai terminé</button></div></div>`;
+  return h;
+}
+
+/* ====== Rendu global ====== */
+function render(){
+  renderTop(); renderFoot();
+  const app=$("#app");
+  app.innerHTML = ui.view==="classe" ? renderClasse() : ui.view==="auto" ? renderAuto() : renderEleve();
+  document.title = ui.view==="classe" || EXPORT===null && !ui.sid ? "Progression CAP EPC" : `${stu(ui.sid)?.nom||""} · Progression CAP EPC`;
+}
+
+/* ====== Modales ====== */
+function modal(html){ $("#modalRoot").innerHTML = `<div class="modal-bg" data-a="closeModal"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; const f=$("#modalRoot input, #modalRoot textarea"); f&&f.focus(); }
+function closeModal(){ $("#modalRoot").innerHTML=""; }
+function confirmBox(title, text, okLabel, fn){
+  modal(`<h3>${esc(title)}</h3><p>${text}</p><div class="acts"><button class="btn" data-a="closeModal">Annuler</button><button class="btn primary" id="mOk">${esc(okLabel)}</button></div>`);
+  $("#mOk").onclick = ()=>{ closeModal(); fn(); };
+}
+
+/* ====== Actions ====== */
+function setRate(cid, who, v){
+  const st=stu(ui.sid), cur=st.evals.find(e=>e.id===ui.eid); if(!cur) return;
+  const before = badgesOf(st);
+  cur.notes = cur.notes||{}; const n = cur.notes[cid] = cur.notes[cid]||{};
+  n[who] = (n[who]===v) ? 0 : v;
+  const after = badgesOf(st), fresh = new Set([...after].filter(b=>!before.has(b)));
+  save();
+  if(fresh.size){ ui.fresh=fresh; const b=BADGES.find(x=>fresh.has(x.id)); toast(`Badge débloqué : ${b.name}`, true); }
+  const y=window.scrollY; render(); window.scrollTo(0,y);
+}
+function createEval(st, date, ctx, copy){
+  const prev = sortedEvals(st).pop();
+  const e = {id:uid(), date, ctx, created:Date.now(), notes:{}};
+  if(copy && prev) for(const c of C){ const p=prev.notes?.[c.id]?.p; if(p) e.notes[c.id]={p}; }
+  st.evals.push(e); return e;
+}
+function readEvalForm(prefix){
+  const date=$(`#${prefix}-date`).value||today(), lbl=$(`#${prefix}-lbl`).value.trim();
+  const ctx=$(`#${prefix}-ctx`).value + (lbl?` · ${lbl}`:""); return {date, ctx, copy:$(`#${prefix}-copy`).checked};
+}
+function addStudentsModal(){
+  modal(`<h3>Ajouter des élèves</h3><p>Un élève par ligne. Vous pouvez coller directement une colonne depuis Pronote ou un tableur.</p>
+  <textarea id="m-names" class="obs" style="min-height:200px" placeholder="NOM Prénom&#10;NOM Prénom&#10;…"></textarea>
+  <div class="acts"><button class="btn" data-a="closeModal">Annuler</button><button class="btn primary" id="mOk">Ajouter</button></div>`);
+  $("#mOk").onclick = ()=>{
+    const names = $("#m-names").value.split(/\r?\n/).map(s=>s.split(/\t|;/)[0].trim()).filter(Boolean);
+    const existing = new Set(S.eleves.map(e=>e.nom.toLowerCase()));
+    let n=0; for(const nom of names){ if(existing.has(nom.toLowerCase())) continue; S.eleves.push({id:uid(), nom, evals:[], created:Date.now()}); existing.add(nom.toLowerCase()); n++; }
+    save(); closeModal(); render(); toast(n?`${n} élève${n>1?"s":""} ajouté${n>1?"s":""}`:"Aucun nouvel élève (doublons ignorés)");
+  };
+}
+function classEvalModal(){
+  modal(`<h3>Évaluation pour toute la classe</h3><p>Crée la même évaluation datée dans la fiche de chaque élève. Vous noterez ensuite chacun dans sa fiche.</p>${newEvalForm("ce").replace('class="panel neweval"','class="neweval" style="padding:0"')}`);
+}
+function backup(){
+  S.lastBackup = Date.now(); save();
+  const name = `Sauvegarde_${slug(S.classe.nom||"classe")}_${today()}.json`;
+  download(name, JSON.stringify(S,null,1), "application/json"); render(); toast("Sauvegarde téléchargée : gardez ce fichier");
+}
+function restore(){
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".json,application/json";
+  inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(!Array.isArray(d.eleves)) throw 0;
+      confirmBox("Ouvrir cette sauvegarde ?", `Elle contient <b>${d.eleves.length} élève(s)</b>${d.classe?.nom?` (${esc(d.classe.nom)})`:""}. Les données actuelles de ce navigateur seront remplacées.`, "Remplacer", ()=>{ S=Object.assign(blank(), d); ui.view="classe"; save(); render(); toast("Sauvegarde ouverte"); });
+    }catch(e){ toast("Ce fichier n'est pas une sauvegarde de cette application"); } };
+    rd.readAsText(f); };
+  inp.click();
+}
+function exportCSV(){
+  const rows=[["Élève","Date","Situation","UP","N°","Tâche","CPS","Compétence","Niveau prof","Auto-évaluation","Observation"]];
+  for(const st of [...S.eleves].sort((a,b)=>a.nom.localeCompare(b.nom,"fr"))) for(const e of sortedEvals(st)) for(const c of C){
+    const n=e.notes?.[c.id]; if(!n||(!n.p&&!n.e&&!n.o)) continue;
+    rows.push([st.nom,fmtD(e.date),e.ctx,"UP"+c.up,c.n,c.t,c.ss,c.cps,n.p?LV[n.p].k:"",n.e?LV[n.e].k:"",n.o||""]);
+  }
+  const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  download(`Competences_${slug(S.classe.nom||"classe")}_${today()}.csv`, csv, "text/csv;charset=utf-8");
+}
+function exportStudent(){
+  const st=stu(ui.sid);
+  const payload = {classe:S.classe, eleve:JSON.parse(JSON.stringify(st)), at:today()};
+  delete payload.eleve.demo;
+  const json = JSON.stringify(payload).replace(/</g,"\\u003c");
+  const html = PRISTINE.replace("<!--EXPORT-SLOT-->", `<script>window.__EXPORT__=${json};<\/script>`);
+  download(`Fiche_${slug(st.nom)}_${today()}.html`, html, "text/html");
+  toast("Fiche exportée : à transmettre à l'élève (ENT, mail, Pronote)");
+}
+function seedDemo(){
+  const names=["Inès Benali","Yanis Martin","Chloé Dubois","Mamadou Diallo"];
+  let seed=7; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  const dates=[["2026-09-15","Positionnement initial"],["2026-11-20","PFMP 1"],["2027-02-05","Séance en classe"]];
+  names.forEach((nom,k)=>{
+    const st={id:uid(), nom, evals:[], demo:true, created:Date.now()}; const base={};
+    C.forEach(c=>base[c.id]=1+Math.floor(rnd()*2));
+    dates.forEach(([d,ctx],i)=>{ const e={id:uid(),date:d,ctx,created:Date.now()+i,notes:{}};
+      C.forEach(c=>{ if(i>0 && rnd()<.55) base[c.id]=Math.min(4,base[c.id]+(rnd()<.8?1:0)+(k===0&&rnd()<.3?1:0));
+        if(i===0||rnd()<.85){ const p=base[c.id]; const eSelf=Math.max(1,Math.min(4,p+(rnd()<.6?0:(rnd()<.5?1:-1)))); e.notes[c.id]={p, e:i===2&&rnd()<.3?0:eSelf}; } });
+      st.evals.push(e); });
+    S.eleves.push(st);
+  });
+  if(!S.classe.nom) S.classe.nom="CAP1 EPC (exemple)";
+  save(); render();
+}
+
+/* ====== Événements ====== */
+document.addEventListener("click", ev=>{
+  const t = ev.target.closest("[data-a]"); if(!t) return;
+  const a = t.dataset.a;
+  if(a==="closeModal"){ if(ev.target===t) closeModal(); return; }
+  if(a==="open"){ ui.view="eleve"; ui.sid=t.dataset.id; ui.eid=null; ui.newEval=false; render(); window.scrollTo(0,0); return; }
+  if(a==="home"){ ui.view="classe"; ui.sid=null; render(); return; }
+  if(a==="rate"){ setRate(t.dataset.c, t.dataset.who, +t.dataset.v); return; }
+  if(a==="pickEval"){ ui.eid=t.dataset.id; const y=scrollY; render(); scrollTo(0,y); return; }
+  if(a==="toggleNew"){ ui.newEval=!ui.newEval; render(); return; }
+  if(a==="auto"){ ui.view="auto"; render(); window.scrollTo(0,0); return; }
+  if(a==="autoDone"){ ui.view="eleve"; render(); window.scrollTo(0,0); toast("Auto-évaluation enregistrée"); return; }
+  if(a==="print"){ window.print(); return; }
+  if(a==="addStudents") return addStudentsModal();
+  if(a==="classEval") return classEvalModal();
+  if(a==="backup") return backup();
+  if(a==="restore") return restore();
+  if(a==="csv") return exportCSV();
+  if(a==="exportStu") return exportStudent();
+  if(a==="demo") return seedDemo();
+  if(a==="theme"){ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark?"light":"dark"; try{localStorage.setItem(KEY+"-theme", r.dataset.theme)}catch(e){} return; }
+  if(a==="clearDemo") return confirmBox("Retirer les élèves fictifs ?", "Seuls les élèves marqués (exemple) sont supprimés.", "Retirer", ()=>{ S.eleves=S.eleves.filter(e=>!e.demo); if(S.classe.nom==="CAP1 EPC (exemple)") S.classe.nom=""; save(); render(); });
+  if(a==="delStu"){ const st=stu(ui.sid); return confirmBox(`Supprimer ${st.nom} ?`, "Sa fiche et toutes ses évaluations seront effacées de ce navigateur. Une sauvegarde antérieure les contient encore.", "Supprimer", ()=>{ S.eleves=S.eleves.filter(e=>e.id!==st.id); ui.view="classe"; save(); render(); }); }
+  if(a==="delEval"){ const st=stu(ui.sid), e=st.evals.find(x=>x.id===ui.eid); return confirmBox("Supprimer cette évaluation ?", `${fmtD(e.date)} · ${esc(e.ctx)}. Les notes et observations de cette date seront effacées.`, "Supprimer", ()=>{ st.evals=st.evals.filter(x=>x.id!==e.id); ui.eid=null; save(); render(); }); }
+});
+document.addEventListener("keydown", ev=>{
+  if(ev.key==="Escape") closeModal();
+  if(ev.key==="Enter" && ev.target.matches("tr[data-a='open']")) ev.target.click();
+});
+document.addEventListener("submit", ev=>{
+  const f=ev.target.closest("[data-form]"); if(!f) return; ev.preventDefault();
+  const p=f.dataset.form, {date,ctx,copy}=readEvalForm(p);
+  if(p==="ne"){ const st=stu(ui.sid); const e=createEval(st,date,ctx,copy); ui.eid=e.id; ui.newEval=false; save(); render(); toast("Évaluation créée"); }
+  if(p==="ce"){ let n=0; for(const st of S.eleves){ if(st.evals.some(e=>e.date===date && e.ctx===ctx)) continue; createEval(st,date,ctx,copy); n++; } save(); closeModal(); render(); toast(`Évaluation ajoutée à ${n} fiche${n>1?"s":""}`); }
+});
+document.addEventListener("input", ev=>{
+  const t=ev.target;
+  if(t.dataset.cf){ S.classe[t.dataset.cf]=t.value; saveSoon(); return; }
+  if(t.dataset.sf){ const st=stu(ui.sid); st.nom=t.value; saveSoon(); return; }
+  if(t.dataset.obs){ const st=stu(ui.sid), cur=st.evals.find(e=>e.id===ui.eid); cur.notes=cur.notes||{}; (cur.notes[t.dataset.obs]=cur.notes[t.dataset.obs]||{}).o=t.value; saveSoon(); }
+});
+window.addEventListener("beforeunload", save);
+
+try{ const th=localStorage.getItem(KEY+"-theme"); if(th) document.documentElement.dataset.theme=th; }catch(e){}
+render();
+
+</script>
+</body>
+</html>
