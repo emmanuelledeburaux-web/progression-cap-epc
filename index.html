@@ -231,7 +231,9 @@ table.heat{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 .toast.gold{background:var(--gold);color:#1b1f33}
 
 .readonly-note{font-size:13px;color:var(--ink-3)}
-footer.foot{padding-block:30px;color:var(--ink-3);font-size:12.5px}
+footer.foot{padding-block:30px 6px;color:var(--ink-3);font-size:12.5px}
+.brand p.credit-top{color:#fff;opacity:.85;margin-top:2px}
+.credit{margin:0 auto;padding-block:0 26px;color:var(--ink-2);font-size:12.5px}
 
 @media (max-width:980px){
   .row2{grid-template-columns:1fr}
@@ -253,6 +255,7 @@ footer.foot{padding-block:30px;color:var(--ink-3);font-size:12.5px}
   body{background:#fff;color:#000;font-size:11px}
   .panel,.comp,.acard{break-inside:avoid}
   .obs{border:0;background:none;resize:none}
+  .credit{display:block!important;color:#000;padding-top:14px;border-top:1px solid #ccc;margin-top:14px}
 }
 </style>
 </head>
@@ -260,13 +263,14 @@ footer.foot{padding-block:30px;color:var(--ink-3);font-size:12.5px}
 <header class="top no-print-keep"><div class="wrap">
   <div class="brand">
     <div class="brand-mark" aria-hidden="true"><i style="background:#c27a2b"></i><i style="background:#d65a24"></i><i style="background:#6a3ed4"></i><i style="background:#3f9447"></i></div>
-    <div><h1>Progression CAP EPC</h1><p>Équipier Polyvalent du Commerce · CPS RVRC 4.0 · Échelle DOME</p></div>
+    <div><h1>Progression CAP EPC</h1><p>Équipier Polyvalent du Commerce · CPS RVRC 4.0 · Échelle DOME</p><p class="credit-top">Créatrice : <b>Emmanuelle DEBURAUX</b></p></div>
   </div>
   <div class="top-actions" id="topActions"></div>
 </div></header>
 <main id="app" class="wrap"></main>
 <div id="modalRoot"></div>
 <footer class="foot wrap" id="foot"></footer>
+<p class="credit wrap">Créatrice : <b>Emmanuelle DEBURAUX</b></p>
 <script>
 "use strict";
 /* ====== Données de référence (reprises à l'identique de la grille d'origine) ====== */
