@@ -154,7 +154,7 @@ table.heat{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
 @keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
 
 /* Graphique */
-.chart svg{width:100%;height:auto;display:block}
+.chart svg{width:100%;max-width:440px;height:auto;display:block;margin:0 auto}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2)}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
 
@@ -464,22 +464,47 @@ function renderClasse(){
 
 /* ====== Vue Élève ====== */
 function chartSVG(st){
-  const ev = sortedEvals(st); if(!ev.length) return `<p class="readonly-note">La courbe apparaîtra après la première évaluation.</p>`;
-  const W=560,H=230,L=36,R=14,T=14,B=44, n=ev.length;
-  const x = i=> n===1 ? (L+(W-L-R)/2) : L + i*(W-L-R)/(n-1);
-  const y = v=> T + (4-v)*(H-T-B)/3;
+  // Radar : 24 axes (une compétence par axe), regroupés en 3 secteurs = blocs UP1/UP2/UP3.
+  // Polygone pointillé = 1re évaluation ; polygone plein = évaluation sélectionnée (cumul, une compétence non revue garde sa dernière note).
+  const ev = sortedEvals(st); if(!ev.length) return `<p class="readonly-note">Le radar apparaîtra après la première évaluation.</p>`;
+  let idx = ev.findIndex(e=>e.id===ui.eid); if(idx<0) idx = ev.length-1;
+  const m0 = stateAt(st,0), m1 = stateAt(st,idx);
+  const W=420,H=400,cx=210,cy=200,R=128,N=C.length;
+  const ang = i=> -Math.PI/2 + (i+.5)*2*Math.PI/N;
+  const pt = (i,r)=>[cx+r*Math.cos(ang(i)), cy+r*Math.sin(ang(i))].map(v=>+v.toFixed(1));
+  const rv = v=> v/4*R;
+  const arc = (i0,i1,r)=>{ const a0=-Math.PI/2+i0*2*Math.PI/N, a1=-Math.PI/2+i1*2*Math.PI/N, big=(a1-a0)>Math.PI?1:0;
+    return `M${cx},${cy} L${(cx+r*Math.cos(a0)).toFixed(1)},${(cy+r*Math.sin(a0)).toFixed(1)} A${r},${r} 0 ${big} 1 ${(cx+r*Math.cos(a1)).toFixed(1)},${(cy+r*Math.sin(a1)).toFixed(1)} Z`; };
+  const LC = {1:"var(--lD)",2:"var(--lO)",3:"var(--lM)",4:"var(--lE)"}, LS = {1:"var(--lD-soft)",2:"var(--lO-soft)",3:"var(--lM-soft)",4:"var(--lE-soft)"};
+  const meanAll = m=>{ const v=C.map(c=>m[c.id]).filter(Boolean); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+  const gm = meanAll(m1), gl = gm==null?1:Math.min(4,Math.max(1,Math.round(gm))), col = LC[gl];
   let g = "";
-  [1,2,3,4].forEach(v=>{ g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--line)" stroke-width="1"/><text x="${L-10}" y="${y(v)+4}" text-anchor="end" style="fill:var(--ink-3);font:700 11px var(--f-mono)">${LV[v].k}</text>`; });
-  ev.forEach((e,i)=>{ const an = n===1?"middle": i===0?"start": i===n-1?"end":"middle"; g+=`<text x="${x(i)}" y="${H-24}" text-anchor="${an}" style="fill:var(--ink-2);font:500 10.5px var(--f-mono)">${fmtShort(e.date)}</text><text x="${x(i)}" y="${H-10}" text-anchor="${an}" style="fill:var(--ink-3);font:10.5px var(--f-body)">${esc((e.ctx||"").slice(0,18))}</text>`; });
-  const series = [[1,"var(--up1)"],[2,"var(--up2)"],[3,"var(--up3)"]];
-  series.forEach(([u,col])=>{
-    const pts = ev.map((e,i)=>{ const v=upMean(stateAt(st,i),u); return v==null?null:[x(i),y(v)]; });
-    const segs = pts.filter(Boolean);
-    if(segs.length>1) g+=`<polyline points="${segs.map(p=>p.join(",")).join(" ")}" fill="none" style="stroke:${col}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
-    segs.forEach((p,k)=>{ const last=k===segs.length-1; g+=`<circle cx="${p[0]}" cy="${p[1]}" r="${last?5.5:3.5}" style="fill:${last?col:"var(--surface)"};stroke:${col}" stroke-width="2"/>`; });
-  });
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution du niveau moyen par bloc">${g}</svg>
-  <div class="legend">${series.map(([u,col])=>`<span><i style="background:${col}"></i>UP${u}</span>`).join("")}<span style="color:var(--ink-3)">Niveau moyen D→E, une compétence non revue garde sa dernière note</span></div>`;
+  // Bandes de niveau D/O/M/E (du bord vers le centre pour que chaque bande recouvre la précédente)
+  [4,3,2,1].forEach(v=>{ g+=`<polygon points="${C.map((c,i)=>pt(i,rv(v)).join(",")).join(" ")}" style="fill:${LS[v]}"/>`; });
+  // Libellés de bloc
+  [1,2,3].forEach(u=>{ const ids=C.map((c,i)=>c.up===u?i:-1).filter(i=>i>=0); const i0=ids[0], i1=ids[ids.length-1]+1;
+    const mid=-Math.PI/2+((i0+i1)/2)*2*Math.PI/N, lr=R+40;
+    g+=`<text x="${(cx+lr*Math.cos(mid)).toFixed(1)}" y="${(cy+lr*Math.sin(mid)+4).toFixed(1)}" text-anchor="middle" style="fill:var(--up${u});font:800 13px var(--f-display)">UP${u}</text>`; });
+  // Anneaux D/O/M/E
+  [1,2,3,4].forEach(v=>{ g+=`<polygon points="${C.map((c,i)=>pt(i,rv(v)).join(",")).join(" ")}" fill="none" style="stroke:${LC[v]}" stroke-opacity=".45" stroke-width="1"/>`; });
+  // Axes + numéros
+  C.forEach((c,i)=>{ const [x,y]=pt(i,R), [lx,ly]=pt(i,R+14);
+    const sep = i===0 || C[i-1].up!==c.up;
+    g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" style="stroke:var(--line)" stroke-width="1"/>`;
+    if(sep){ const a=-Math.PI/2+i*2*Math.PI/N; g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+(R+24)*Math.cos(a)).toFixed(1)}" y2="${(cy+(R+24)*Math.sin(a)).toFixed(1)}" style="stroke:var(--ink-3)" stroke-width="1.2"/>`; }
+    g+=`<text x="${lx}" y="${ly+3.5}" text-anchor="middle" style="fill:var(--up${c.up});font:600 10px var(--f-mono)"><title>${c.n}. ${esc(c.t)}</title>${c.n}</text>`; });
+  [1,2,3,4].forEach(v=>{ g+=`<text x="${cx+3}" y="${cy-rv(v)-2}" style="fill:${LC[v]};font:800 10px var(--f-mono)">${LV[v].k}</text>`; });
+  // Polygones
+  const poly = m=>C.map((c,i)=>pt(i,rv(m[c.id]||0)).join(",")).join(" ");
+  if(idx>0) g+=`<polygon points="${poly(m0)}" fill="none" style="stroke:var(--ink-3)" stroke-width="1.6" stroke-dasharray="4 3" stroke-linejoin="round"/>`;
+  g+=`<polygon points="${poly(m1)}" style="fill:${col};stroke:${col}" fill-opacity=".28" stroke-width="2.6" stroke-linejoin="round"/>`;
+  C.forEach((c,i)=>{ const v=m1[c.id]; if(!v) return; const [x,y]=pt(i,rv(v)); g+=`<circle cx="${x}" cy="${y}" r="4" style="fill:${LC[v]};stroke:var(--surface)" stroke-width="1.4"><title>${c.n}. ${esc(c.t)} : ${LV[v].n}</title></circle>`; });
+  const fmt = v=> v==null ? "—" : v.toFixed(1).replace(".",",");
+  const delta = u=>{ const a=upMean(m0,u), b=upMean(m1,u); if(idx===0||a==null||b==null) return ""; const d=b-a; return ` <span style="color:${d>0?"var(--lE)":d<0?"var(--danger)":"var(--ink-3)"}">(${d>0?"+":""}${d.toFixed(1).replace(".",",")})</span>`; };
+  const cur = ev[idx];
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Radar des 24 compétences regroupées par bloc">${g}</svg>
+  <div class="legend">${[1,2,3].map(u=>`<span><i style="background:var(--up${u})"></i>UP${u} <b class="mono">${fmt(upMean(m1,u))}</b>${delta(u)}</span>`).join("")}</div>
+  <div class="legend" style="margin-top:4px"><span><i style="background:${col};height:8px"></i>${fmtD(cur.date)} · ${esc(cur.ctx||"")} · niveau global <b style="color:${col}">${gm==null?"—":LV[gl].n} (${fmt(gm)})</b></span>${idx>0?`<span><i style="background:none;border-top:2px dashed var(--ink-3);height:0"></i>1re évaluation (${fmtD(ev[0].date)})</span>`:""}<span style="color:var(--ink-3)">La couleur du radar suit le niveau global : D → O → M → E · chaque point a la couleur de son niveau</span></div>`;
 }
 function renderEleve(){
   const st = stu(ui.sid); if(!st){ ui.view="classe"; return renderClasse(); }
@@ -505,7 +530,7 @@ function renderEleve(){
       ${ro?"":`<button class="btn ghost danger" data-a="delStu">Supprimer l'élève</button>`}
     </div></div>`;
   h += `<div class="row2">
-    <div class="panel box chart"><h3>Évolution par bloc</h3>${chartSVG(st)}</div>
+    <div class="panel box chart"><h3>Radar par bloc</h3>${chartSVG(st)}</div>
     <div class="panel box"><h3>Badges <span class="mono" style="font-size:12.5px;color:var(--ink-3);font-weight:500">${got.size} / ${BADGES.length}</span></h3>
       <div class="badges">${BADGES.map(b=>`<div class="badge ${got.has(b.id)?"on":""} ${ui.fresh?.has(b.id)?"new":""}">${icon(b.ico,got.has(b.id))}<b>${esc(b.name)}</b><small>${esc(b.desc)}</small></div>`).join("")}</div>
     </div></div>`;
@@ -513,7 +538,7 @@ function renderEleve(){
   h += `<div class="evals"><span class="lbl">Évaluations</span>${ev.map(e=>`<button class="chip ${e.id===ui.eid?"on":""}" data-a="pickEval" data-id="${e.id}"><span class="d">${fmtD(e.date)}</span>${esc(e.ctx)}</button>`).join("")||`<span class="readonly-note">Aucune évaluation pour l'instant.</span>`}
     ${ro?"":`<button class="btn sm" data-a="toggleNew">+ Nouvelle évaluation</button>${cur?`<button class="btn sm ghost danger" data-a="delEval">Supprimer cette évaluation</button>`:""}`}</div>`;
   if(ui.newEval && !ro) h += newEvalForm("ne");
-  if(!cur){ h += `<div class="panel empty"><h2>Première évaluation</h2><p>Créez une évaluation datée (positionnement initial, PFMP…). Chaque nouvelle évaluation ajoute un point sur la courbe.</p>${ro?"":`<button class="btn primary" data-a="toggleNew">Créer l'évaluation</button>`}</div>`; return h; }
+  if(!cur){ h += `<div class="panel empty"><h2>Première évaluation</h2><p>Créez une évaluation datée (positionnement initial, PFMP…). Chaque nouvelle évaluation met à jour le radar.</p>${ro?"":`<button class="btn primary" data-a="toggleNew">Créer l'évaluation</button>`}</div>`; return h; }
 
   h += `<div class="legend-dome">${[1,2,3,4].map(v=>`<span title="${esc(LV_DEF[v])}"><b class="lv${v}">${LV[v].k}</b>${LV[v].n}</span>`).join("")}<span style="color:var(--ink-3)">· Gros boutons : prof · Petits boutons pointillés : auto-évaluation de l'élève · Cliquer à nouveau efface</span></div>`;
   const evIdx = ev.indexOf(cur);
